@@ -1,60 +1,31 @@
 body {
     background-color: #fffaeb;
     font-family: Arial, sans-serif;
-  }
-  
-  .auth-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-  }
-  
-  .auth-box {
-    background: white;
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    max-width: 400px;
-    width: 100%;
-  }
-  
-  .auth-heading {
-    color: #ff8c00;
-    margin-bottom: 1rem;
-  }
-  
-  .auth-input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 1rem;
-  }
-  
-  .auth-button {
-    width: 100%;
-    background-color: #ff8c00;
-    color: white;
-    padding: 10px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-  }
-  
-  .auth-button:hover {
-    background-color: #e07b00;
-  }
-  
-  .auth-link {
-    color: #ff8c00;
-    text-decoration: none;
-    font-weight: bold;
-  }
-  
-  .auth-link:hover {
-    text-decoration: underline;
-  }
-  
+    /* overflow-x:hidden; */
+}
+.hover-big{
+  transition: transform 0.1s;
+}
+.hover-big:hover{
+  transform: scale(1.01);
+  transition: transform 0.1s;
+}
+
+.hover-big-icons{
+  transition: transform 0.2s;
+}
+.hover-big-icons:hover{
+  transform: scale(1.2);
+  transition: transform 0.2s;
+}
+
+.hover-shadow {
+  transition: background-color 0.2s, transform 0.2s;
+  border-radius: 5px;
+}
+
+.hover-shadow:hover {
+  background-color: rgba(0, 0, 0, 0.25); /* Light dim effect */
+}
+
+@import url('./css/auth.css');
