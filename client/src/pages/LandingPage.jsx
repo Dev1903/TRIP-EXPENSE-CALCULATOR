@@ -35,6 +35,7 @@ export default function LandingPage() {
       <div className="row">
         <div className="container mt-5 mb-5">
         <div className="text-center rounded-5 py-5 bg-primary text-white hover-big ">
+        
         <h1 className="fw-bold">Simplify Your Trip Expenses</h1>
         <p className="lead">Easily track and split costs with your friends</p>
       </div>

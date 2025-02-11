@@ -1,18 +1,32 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { googleLogin, emailPasswordLogin } from '../api/api';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import Notiflix from 'notiflix';
+import quotes from '../components/quotes';
 
 const LoginPage = () => {
-
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const getRandomQuote = () => {
+    return quotes[Math.floor(Math.random() * quotes.length)];
+  };
 
   const handleGoogleLogin = async (response) => {
     try {
       const backendResponse = await googleLogin(response);
       console.log('Backend Response:', backendResponse);
+
+      Notiflix.Report.success(
+        'Welcome!',
+        getRandomQuote(),
+        'Proceed',
+        () => navigate('/dashboard')
+      );
     } catch (error) {
+      Notiflix.Notify.failure('Google login failed!');
       console.error('Login Error:', error);
     }
   };
@@ -22,11 +36,18 @@ const LoginPage = () => {
     try {
       const backendResponse = await emailPasswordLogin({ email, password });
       console.log('Backend Response:', backendResponse);
+
+      Notiflix.Report.success(
+        'Welcome!',
+        getRandomQuote(),
+        'Proceed',
+        () => navigate('/dashboard')
+      );
     } catch (error) {
+      Notiflix.Notify.failure('Wrong email or password!');
       console.error('Login Error:', error);
     }
   };
-
 
   return (
     <GoogleOAuthProvider clientId={`${process.env.REACT_APP_GOOGLE_CLIENT_ID}`}>

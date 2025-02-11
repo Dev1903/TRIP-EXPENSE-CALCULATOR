@@ -139,11 +139,11 @@ const SignupPage = () => {
                 </FormControl>
 
                 {/* Submit Button */}
-                <div className="btn btn-primary w-100 fw-bold mt-3"
-                    disabled={passwordColorError || confirmPasswordColorError}
+                <button className="btn btn-primary w-100 fw-bold mt-3"
+                    disabled={!email || !phone || passwordColorError || confirmPasswordColorError}
                     onClick={handleSignup}>
                     Sign Up
-                </div>
+                </button>
             </div>
         </div>
     );

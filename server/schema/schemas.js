@@ -7,7 +7,17 @@ const userSchema = mongoose.Schema({
     mobile: { type: String, default: null },
     picture: String,
 });
-
 const User = mongoose.model('User', userSchema);
 
-export default User;
+const TripGroupSchema = new mongoose.Schema({
+    groupName: { type: String, required: true },
+    members: [
+        {
+            name: String,
+            _id: mongoose.Schema.Types.ObjectId 
+        }
+    ]
+});
+const TripGroup = mongoose.model("TripGroup", TripGroupSchema);
+
+export { User, TripGroup };
