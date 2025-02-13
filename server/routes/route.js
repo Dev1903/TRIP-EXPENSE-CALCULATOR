@@ -1,22 +1,23 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { jwtDecode } from "jwt-decode";
+// import { jwtDecode } from "jwt-decode";
 import { OAuth2Client } from "google-auth-library";
 import { User, TripGroup } from "../schema/schemas.js";
+import dotenv from 'dotenv'
+dotenv.config()
 
 const router = express.Router();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 const SESSION_EXPIRY = "1h";
 
-// Temporary session storage
-const sessionTokens = new Map(); // { userId: token }
-
 // 🟢 Email/Password Login API
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+    // console.log("LOGIN REQ>BODY:",req.body)
+    // console.log("Email: ", req.body.email)
     const user = await User.findOne({ email });
     if (!user)
       return res.status(401).json({ message: "Invalid email or password" });
@@ -25,24 +26,9 @@ router.post("/login", async (req, res) => {
     if (!isMatch)
       return res.status(401).json({ message: "Invalid email or password" });
 
-    if (sessionTokens.has(user._id.toString())) {
-      return res
-        .status(200)
-        .json({
-          message: "Already logged in",
-          token: sessionTokens.get(user._id.toString()),
-          user,
-        });
-    }
 
-    const token = jwt.sign(
-      { userId: user._id, email: user.email },
-      JWT_SECRET,
-      { expiresIn: SESSION_EXPIRY }
-    );
-    sessionTokens.set(user._id.toString(), token);
-
-    res.status(200).json({ message: "Login successful", token, user });
+    // ✅ Send token in response (Frontend stores in sessionStorage)
+    res.status(200).json({ message: "Login successful"});
   } catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -52,54 +38,28 @@ router.post("/login", async (req, res) => {
 // 🟢 Google Login API
 router.post("/google-login", async (req, res) => {
   try {
-    const { credential } = req.body; // ✅ Extract token correctly
-    //   if (!token) return res.status(400).json({ message: "No token provided" });
-    // ✅ Verify token with Google
+    const { credential } = req.body;
     const ticket = await client.verifyIdToken({
       idToken: credential,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
 
-    // ✅ Get user details from Google
     const { email, name, picture } = ticket.getPayload();
-
     let user = await User.findOne({ email });
 
-    // ✅ If user doesn't exist, create one
     if (!user) {
-      user = new User({ name, email, picture: picture }); // Google ID as password (not used)
+      user = new User({ name, email, picture });
       await user.save();
-    }
-
-    // ✅ Check session token
-    if (sessionTokens.has(user._id.toString())) {
-      return res
-        .status(200)
-        .json({
-          message: "Already logged in",
-          token: sessionTokens.get(user._id.toString()),
-          user,
-        });
     }
 
     // ✅ Generate JWT Token
     const jwtToken = jwt.sign(
-      { userId: user._id, email: user.email, picture: user.picture },
+      { _id: user._id, email: user.email, name: user.name },
       JWT_SECRET,
       { expiresIn: SESSION_EXPIRY }
     );
-    sessionTokens.set(user._id.toString(), jwtToken);
 
-    res.status(200).json({
-      message: "Google login successful",
-      token: jwtToken,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        picture: user.picture,
-      },
-    });
+    res.status(200).json({ message: "Google login successful", token: jwtToken });
   } catch (error) {
     console.error("Google Login Error:", error);
     res.status(500).json({ message: "Google Authentication Failed" });
@@ -108,14 +68,12 @@ router.post("/google-login", async (req, res) => {
 
 // 🟢 Logout API
 router.post("/logout", (req, res) => {
-  const { userId } = req.body;
-  sessionTokens.delete(userId);
   res.status(200).json({ message: "Logged out successfully" });
 });
 
 router.post("/signup", async (req, res) => {
   try {
-    const { email, phone, password } = req.body;
+    const { name, email, phone, password } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -129,13 +87,19 @@ router.post("/signup", async (req, res) => {
 
     // Create User
     const newUser = new User({
+      name,
       email,
       phone,
       password: hashedPassword,
     });
 
     await newUser.save();
-    res.status(201).json({ message: "User registered successfully" });
+    const token = jwt.sign(
+      { _id: newUser._id, name: newUser.name, email: newUser.email },
+      JWT_SECRET,
+      { expiresIn: SESSION_EXPIRY }
+    );
+    res.status(201).json({ message: "User registered successfully", token });
   } catch (error) {
     console.error("Signup Error:", error);
     res.status(500).json({ message: "Server error" });
@@ -143,40 +107,74 @@ router.post("/signup", async (req, res) => {
 });
 
 router.post("/create-group", async (req, res) => {
-    try {
-        const { groupName, members} = req.body;
-        console.log("Route req.body", groupName);
+  try {
+    const { groupName, members } = req.body;
+    // console.log("Route req.body", req.body);
 
-        // Validate input
-        if (!groupName || !members.length) {
-            return res.status(400).json({ message: "Group name and members are required" });
-        }
-
-        // Create and save the group
-        const newGroup = new TripGroup({ groupName, members  });
-        await newGroup.save();
-
-        res.status(201).json({ message: "Trip group created successfully", group: newGroup });
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
+    // Validate input
+    if (!groupName || !members.length) {
+      return res.status(400).json({ message: "Group name and members are required" });
     }
+
+    // Create and save the group
+    const newGroup = new TripGroup({ groupName, members });
+    await newGroup.save();
+
+    res.status(201).json({ message: "Trip group created successfully", group: newGroup });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 });
 
 // Fetch groups for a logged-in user
 router.get("/user-groups/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+    console.log("Backend Email: ", email)
+
+    // Find groups where the user is a member
+    const userGroups = await TripGroup.find({ "members.email": email });
+    console.log("ROUTE USER GROUPS:", userGroups)
+
+    if (!userGroups.length) {
+      return res.status(404).json({ message: "No groups found for this user" });
+    }
+
+    res.status(200).json({ userGroups: userGroups });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+// Fetch user details by email
+router.get("/user/:email", async (req, res) => {
+  try {
+    const userEmail = req.params.email;
+
+    // Find user by email
+    const user = await User.findOne({ email: userEmail }).select("_id name email");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Fetch group by ID
+router.get("/group/:id", async (req, res) => {
     try {
-        const { email } = req.params;
-
-        // Find groups where the user is a member
-        const userGroups = await TripGroup.find({ "members.email": email });
-
-        if (!userGroups.length) {
-            return res.status(404).json({ message: "No groups found for this user" });
+        const group = await TripGroup.findById(req.params.id);
+        if (!group) {
+            return res.status(404).json({ message: "Group not found" });
         }
-
-        res.status(200).json({ groups: userGroups });
+        res.json(group);
     } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
+        res.status(500).json({ message: "Server error", error });
     }
 });
 

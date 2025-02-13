@@ -1,37 +1,44 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { fetchUserGroups, createTripGroup } from "../api/api.js"; // Import API functions
+import { jwtDecode } from "jwt-decode";
 
 const TripContext = createContext();
 
 export const TripProvider = ({ children }) => {
     const [groups, setGroups] = useState([]);
 
-    useEffect(() => {
-        const loadGroups = async () => {
-            const email = localStorage.getItem("userEmail");
-            if (!email) return;
 
+    // Function to load groups
+    const refreshGroups = async () => {
+        const email = jwtDecode(sessionStorage.getItem("jwtToken")).email;
+        console.log("Trip COntext Email: ", email)
+        if (!email) return;
+        
+        try {
             const userGroups = await fetchUserGroups(email);
             setGroups(userGroups);
-        };
-
-        loadGroups();
+        } catch (error) {
+            console.error("Error fetching user groups:", error);
+        }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        refreshGroups();
     }, []);
 
-    // ✅ Add group using API
+    // ✅ Add group using API and refresh groups
     const addGroup = async (newGroup) => {
         try {
-            console.log("New Group: ",newGroup)
-            const createdGroup = await createTripGroup(newGroup);
-            console.log("Created Group: ",createdGroup)
-            setGroups((prevGroups) => [...prevGroups, createdGroup]);
+            await createTripGroup(newGroup);
+
+            await refreshGroups(); // Refresh the groups after creation
         } catch (error) {
             console.error("Error adding group:", error);
         }
     };
 
     return (
-        <TripContext.Provider value={{ groups, addGroup }}>
+        <TripContext.Provider value={{ groups, addGroup, refreshGroups }}>
             {children}
         </TripContext.Provider>
     );

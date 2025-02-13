@@ -16,8 +16,8 @@ const LoginPage = () => {
 
   const handleGoogleLogin = async (response) => {
     try {
-      const backendResponse = await googleLogin(response);
-      console.log('Backend Response:', backendResponse);
+      await googleLogin(response);
+      // console.log('Backend Response:', backendResponse);
 
       Notiflix.Report.success(
         'Welcome!',
@@ -34,8 +34,8 @@ const LoginPage = () => {
   const handleEmailPasswordLogin = async (e) => {
     e.preventDefault();
     try {
-      const backendResponse = await emailPasswordLogin({ email, password });
-      console.log('Backend Response:', backendResponse);
+      await emailPasswordLogin(email, password);
+      // console.log('Backend Response:', backendResponse);
 
       Notiflix.Report.success(
         'Welcome!',

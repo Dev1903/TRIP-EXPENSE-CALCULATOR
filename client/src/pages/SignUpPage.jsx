@@ -1,22 +1,39 @@
 import React, { useState } from 'react';
 import { Input, FormControl, FormErrorMessage } from '@chakra-ui/react';
 import { signupUser } from '../api/api';
+import Notiflix from 'notiflix';
+import { useNavigate } from 'react-router-dom';
 
 const SignupPage = () => {
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const navigate = useNavigate();
 
+    const [nameError, setNameError] = useState(null);
     const [emailError, setEmailError] = useState(null);
     const [phoneError, setPhoneError] = useState(null);
     const [passwordError, setPasswordError] = useState(null);
     const [confirmPasswordError, setConfirmPasswordError] = useState(null);
 
+    const [nameColorError, setNameColorError] = useState(null);
     const [emailColorError, setEmailColorError] = useState(null);
     const [phoneColorError, setPhoneColorError] = useState(null);
     const [passwordColorError, setPasswordColorError] = useState(null);
     const [confirmPasswordColorError, setConfirmPasswordColorError] = useState(null);
+
+    const validateName = (value) => {
+        if (!value.trim()) {
+            setNameError('Name is required');
+            setNameColorError(true)
+        } else {
+            setNameError('A Good Name !');
+            setNameColorError(false)
+        }
+        setName(value);
+    };
 
     const validateEmail = (value) => {
         if (!value.includes('@')) {
@@ -67,12 +84,22 @@ const SignupPage = () => {
     };
 
     const handleSignup = async () => {
-        const userData = { email, phone, password };
+        const userData = { name, email, phone, password };
         try {
             const response = await signupUser(userData);
-            alert(response.message);
+            Notiflix.Notify.success(response.message);
+            navigate('/signin')
         } catch (error) {
-            alert(error.response?.data?.message || 'Signup failed');
+            const errorMessage = error.response?.data?.message || 'Signup failed';
+            if (errorMessage.toLowerCase().includes("email already in use")) {
+                Notiflix.Notify.failure(errorMessage);
+                setEmail('');
+                setPassword('');
+                setConfirmPassword('');
+                setEmailError('');
+                setPasswordError('');
+                setConfirmPasswordError('');
+            }
         }
     };
 
@@ -80,6 +107,21 @@ const SignupPage = () => {
         <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
             <div className="card shadow-lg p-4 border-0 rounded-4" style={{ maxWidth: '400px', width: '100%' }}>
                 <h3 className="text-center mb-4 text-primary fw-bold">Sign Up</h3>
+
+                {/* Name Input */}
+                <FormControl isInvalid={!!nameError} className="mb-0">
+                    <label className="form-label fw-semibold">Name</label>
+                    <Input
+                        type="text"
+                        className={`form-control ${nameColorError ? "border-danger" : name ? "border-success" : ""}`}
+                        value={name}
+                        onChange={(e) => validateName(e.target.value)}
+                        placeholder="Enter your name"
+                        autoComplete="name"
+                        required
+                    />
+                    <div className='d-flex justify-content-center pe-2 mt-2' style={{ minHeight: '25px' }}><FormErrorMessage className={`${nameColorError ? "text-danger" : name ? "text-success" : ""}`}>{nameError}</FormErrorMessage></div>
+                </FormControl>
 
                 {/* Email Input */}
                 <FormControl isInvalid={!!emailError} className="">
@@ -90,6 +132,7 @@ const SignupPage = () => {
                         value={email}
                         onChange={(e) => validateEmail(e.target.value)}
                         placeholder="Enter your email"
+                        autoComplete="email"
                         required
                     />
                     <div className='d-flex justify-content-center pe-2 mt-2' style={{ minHeight: '25px' }}><FormErrorMessage className={`${emailColorError ? "text-danger" : email ? "text-success" : ""}`}>{emailError}</FormErrorMessage></div>
@@ -105,6 +148,7 @@ const SignupPage = () => {
                         onInput={(e) => e.target.value = e.target.value.replace(/\D/g, '')}
                         onChange={(e) => validatePhone(e.target.value)}
                         placeholder="Enter your phone number"
+                        autoComplete="tel"
                         required
                     />
                     <div className='d-flex justify-content-center pe-2 mt-2' style={{ minHeight: '25px' }}><FormErrorMessage className={`${phoneColorError ? "text-danger" : "text-success"}`}>{phoneError}</FormErrorMessage></div>
